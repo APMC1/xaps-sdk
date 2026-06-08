@@ -204,21 +204,62 @@ class XapsClient:
         await self.aclose()
 
 
+def _receipt_secret() -> str:
+    secret = os.getenv("XAPS_RECEIPT_SECRET") or os.getenv("BANK_WEBHOOK_SECRET")
+    if not secret:
+        raise ValueError(
+            "XAPS_RECEIPT_SECRET (or BANK_WEBHOOK_SECRET) not set in environment."
+        )
+    return secret
+
+
+def sign_node_receipt(
+    receipt_id: str,
+    agent_key: str,
+    payload_hash: str,
+    status: str,
+    signed_at: str,
+    *,
+    secret: Optional[str] = None,
+) -> str:
+    """Reproduce the node's HMAC signature (for testing). Matches src/main.py."""
+    key = secret or _receipt_secret()
+    message = f"{receipt_id}:{agent_key}:{payload_hash}:{status}:{signed_at}"
+    return hmac.new(key.encode(), message.encode(), hashlib.sha256).hexdigest()
+
+
+def verify_node_receipt(
+    receipt_id: str,
+    agent_key: str,
+    payload_hash: str,
+    status: str,
+    signed_at: str,
+    signature: str,
+    *,
+    secret: Optional[str] = None,
+) -> bool:
+    """Verify a /verify response signature from the Xaps Sovereign Node."""
+    expected = sign_node_receipt(
+        receipt_id, agent_key, payload_hash, status, signed_at, secret=secret
+    )
+    return hmac.compare_digest(expected, signature)
+
+
 def verify_xaps_receipt(receipt_data: dict[str, Any], provided_signature: str) -> bool:
     """
-    Cryptographically verifies a receipt from the Xaps Sovereign Node.
+    Verify a full /verify API response dict (uses receipt_id, signature, etc.).
     """
-    secret = os.getenv("XAPS_RECEIPT_SECRET")
-    if not secret:
-        raise ValueError("CRITICAL: XAPS_RECEIPT_SECRET not found in client environment.")
+    required = ("receipt_id", "agent_key", "payload_hash", "signed_at", "signature")
+    audit = receipt_data.get("audit") or {}
+    status = audit.get("status") or receipt_data.get("status")
+    if not all(receipt_data.get(k) for k in required) or not status:
+        raise ValueError(f"Receipt missing required fields: {required + ('audit.status',)}")
 
-    # Convert the receipt data to a strict, predictable string format
-    data_string = json.dumps(receipt_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
-
-    # Re-hash the data using the secret key
-    expected_signature = hmac.new(
-        secret.encode("utf-8"), data_string, hashlib.sha256
-    ).hexdigest()
-
-    # Securely compare the signatures (prevents timing attacks)
-    return hmac.compare_digest(expected_signature, provided_signature)
+    return verify_node_receipt(
+        receipt_id=receipt_data["receipt_id"],
+        agent_key=receipt_data["agent_key"],
+        payload_hash=receipt_data["payload_hash"],
+        status=status,
+        signed_at=receipt_data["signed_at"],
+        signature=receipt_data["signature"],
+    )
