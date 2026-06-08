@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import os
+import hmac
+import hashlib
+import json
 from typing import Any, Optional
 
 import httpx
@@ -199,3 +202,23 @@ class XapsClient:
 
     async def __aexit__(self, *args: object) -> None:
         await self.aclose()
+
+
+def verify_xaps_receipt(receipt_data: dict[str, Any], provided_signature: str) -> bool:
+    """
+    Cryptographically verifies a receipt from the Xaps Sovereign Node.
+    """
+    secret = os.getenv("XAPS_RECEIPT_SECRET")
+    if not secret:
+        raise ValueError("CRITICAL: XAPS_RECEIPT_SECRET not found in client environment.")
+
+    # Convert the receipt data to a strict, predictable string format
+    data_string = json.dumps(receipt_data, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+    # Re-hash the data using the secret key
+    expected_signature = hmac.new(
+        secret.encode("utf-8"), data_string, hashlib.sha256
+    ).hexdigest()
+
+    # Securely compare the signatures (prevents timing attacks)
+    return hmac.compare_digest(expected_signature, provided_signature)

@@ -10,6 +10,7 @@ from .xaps import (
     XapsPaymentError,
     XapsRateLimitError,
     XapsRejectedError,
+    verify_xaps_receipt,
 )
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "XapsRateLimitError",
     "XapsAPIError",
     "XapsRejectedError",
+    "verify_xaps_receipt",
     "__version__",
 ]
