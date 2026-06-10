@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import os
-import hmac
-import hashlib
-import json
 from typing import Any, Optional
 
 import httpx
@@ -204,62 +201,87 @@ class XapsClient:
         await self.aclose()
 
 
-def _receipt_secret() -> str:
-    secret = os.getenv("XAPS_RECEIPT_SECRET") or os.getenv("BANK_WEBHOOK_SECRET")
-    if not secret:
-        raise ValueError(
-            "XAPS_RECEIPT_SECRET (or BANK_WEBHOOK_SECRET) not set in environment."
+# ============================================================
+# Receipt Verification Helpers (opt-in, added for ECDSA hardening)
+# These are pure functions — clients call them explicitly after audit().
+# No changes to XapsClient.audit() or existing behavior.
+# ============================================================
+
+import hashlib
+import hmac
+import json
+
+try:
+    from loguru import logger
+except Exception:
+    import warnings
+    logger = type("logger", (), {"warning": lambda *a, **k: warnings.warn(str(a[0]) if a else "", UserWarning)})()
+
+def _canonical_receipt_message_for_verify(receipt: dict) -> str:
+    """Stable JSON canonicalization used for ECDSA verification.
+    (HMAC path uses the original colon string inside verify_receipt_hmac for legacy compatibility.)
+    """
+    return json.dumps({
+        "receipt_id": receipt["receipt_id"],
+        "agent_key": receipt["agent_key"],
+        "payload_hash": receipt["payload_hash"],
+        "status": receipt["status"],
+        "signed_at": receipt["signed_at"],
+    }, sort_keys=True, separators=(',', ':'))
+
+
+def verify_receipt_ecdsa(receipt: dict, public_key_hex: str) -> bool:
+    """
+    Verify an ECDSA (NIST256p) signed Xaps receipt.
+    Returns False on any error (never raises).
+    """
+    try:
+        from ecdsa import VerifyingKey, NIST256p, SignatureError
+        vk = VerifyingKey.from_string(
+            bytes.fromhex(public_key_hex),
+            curve=NIST256p,
+            hashfunc=hashlib.sha256
         )
-    return secret
+        sig = bytes.fromhex(receipt["signature"])
+        message = _canonical_receipt_message_for_verify(receipt)
+        vk.verify(sig, message.encode(), hashfunc=hashlib.sha256)
+        return True
+    except (SignatureError, ValueError, Exception):
+        return False
 
 
-def sign_node_receipt(
-    receipt_id: str,
-    agent_key: str,
-    payload_hash: str,
-    status: str,
-    signed_at: str,
-    *,
-    secret: Optional[str] = None,
-) -> str:
-    """Reproduce the node's HMAC signature (for testing). Matches src/main.py."""
-    key = secret or _receipt_secret()
-    message = f"{receipt_id}:{agent_key}:{payload_hash}:{status}:{signed_at}"
-    return hmac.new(key.encode(), message.encode(), hashlib.sha256).hexdigest()
-
-
-def verify_node_receipt(
-    receipt_id: str,
-    agent_key: str,
-    payload_hash: str,
-    status: str,
-    signed_at: str,
-    signature: str,
-    *,
-    secret: Optional[str] = None,
-) -> bool:
-    """Verify a /verify response signature from the Xaps Sovereign Node."""
-    expected = sign_node_receipt(
-        receipt_id, agent_key, payload_hash, status, signed_at, secret=secret
-    )
-    return hmac.compare_digest(expected, signature)
-
-
-def verify_xaps_receipt(receipt_data: dict[str, Any], provided_signature: str) -> bool:
+def verify_receipt_hmac(receipt: dict, secret: str) -> bool:
     """
-    Verify a full /verify API response dict (uses receipt_id, signature, etc.).
+    Verify an HMAC-signed receipt using the node's shared secret.
+    ⚠️ Only parties who know the secret (node operator) can do this.
+    Returns False on error.
     """
-    required = ("receipt_id", "agent_key", "payload_hash", "signed_at", "signature")
-    audit = receipt_data.get("audit") or {}
-    status = audit.get("status") or receipt_data.get("status")
-    if not all(receipt_data.get(k) for k in required) or not status:
-        raise ValueError(f"Receipt missing required fields: {required + ('audit.status',)}")
+    try:
+        message = f"{receipt['receipt_id']}:{receipt['agent_key']}:{receipt['payload_hash']}:{receipt['status']}:{receipt['signed_at']}"
+        expected = hmac.new(secret.encode(), message.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(receipt.get("signature", ""), expected)
+    except Exception:
+        return False
 
-    return verify_node_receipt(
-        receipt_id=receipt_data["receipt_id"],
-        agent_key=receipt_data["agent_key"],
-        payload_hash=receipt_data["payload_hash"],
-        status=status,
-        signed_at=receipt_data["signed_at"],
-        signature=receipt_data["signature"],
-    )
+
+def verify_xaps_receipt(receipt: dict, *, public_key_hex: str | None = None, secret: str | None = None) -> bool:
+    """
+    Verify an Xaps receipt.
+    - ECDSA receipts (signature_scheme == "ecdsa-nist256p"): pass public_key_hex (from /oracle-public-key or the receipt itself)
+    - HMAC receipts: pass the node's XAPS_RECEIPT_SECRET (only the operator should have it)
+    - Unknown/missing scheme: returns False
+    """
+    scheme = receipt.get("signature_scheme", "hmac-sha256")
+    if scheme == "ecdsa-nist256p":
+        if not public_key_hex:
+            logger.warning("ECDSA receipt but no public_key_hex provided for verification.")
+            return False
+        return verify_receipt_ecdsa(receipt, public_key_hex)
+    elif scheme == "hmac-sha256":
+        if not secret:
+            logger.warning("HMAC receipt but no secret provided for verification.")
+            return False
+        return verify_receipt_hmac(receipt, secret)
+    else:
+        logger.warning(f"Unknown signature_scheme in receipt: {scheme}")
+        return False

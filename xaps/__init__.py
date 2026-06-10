@@ -10,8 +10,8 @@ from .xaps import (
     XapsPaymentError,
     XapsRateLimitError,
     XapsRejectedError,
-    sign_node_receipt,
-    verify_node_receipt,
+    verify_receipt_ecdsa,
+    verify_receipt_hmac,
     verify_xaps_receipt,
 )
 
@@ -23,8 +23,8 @@ __all__ = [
     "XapsRateLimitError",
     "XapsAPIError",
     "XapsRejectedError",
+    "verify_receipt_ecdsa",
+    "verify_receipt_hmac",
     "verify_xaps_receipt",
-    "verify_node_receipt",
-    "sign_node_receipt",
     "__version__",
 ]
