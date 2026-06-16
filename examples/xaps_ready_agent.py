@@ -2,7 +2,7 @@
 """
 XAPS-Ready Autonomous Agent Template
 =====================================
-Install: pip install xaps
+Install: pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
 Docs: https://github.com/APMC1/xaps-sdk
 
 This template shows how to build an agent that:
@@ -17,7 +17,7 @@ from xaps import XapsClient, XapsRejectedError
 
 # ── CONFIG ──────────────────────────────────────────────────────────
 AGENT_KEY = os.getenv("XAPS_AGENT_KEY", "your_key_here")
-TOLLBOOTH = os.getenv("XAPS_API_URL", "http://157.245.39.226:8000")
+TOLLBOOTH = os.getenv("XAPS_API_URL", "https://api.xaps.network")
 
 if AGENT_KEY == "your_key_here":
     print("ERROR: Set XAPS_AGENT_KEY environment variable")
@@ -53,7 +53,10 @@ def handle_capability_gap(task_description: str, budget: float):
     )
     
     if receipt["audit"]["status"] != "APPROVED":
-        raise RuntimeError(f"Tollbooth REJECTED: {receipt['audit'].get('beta_attack', 'Unknown')}")
+        raise XapsRejectedError(
+            receipt["audit"].get("beta_attack", "Tollbooth rejected delegation"),
+            receipt=receipt,
+        )
     
     print(f"[XAPS] Audit APPROVED. Receipt: {receipt.get('receipt_id', 'N/A')}")
     

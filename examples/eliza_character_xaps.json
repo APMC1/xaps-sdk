@@ -16,10 +16,10 @@
   ],
   "knowledge": [
     "XAPS SDK: https://github.com/APMC1/xaps-sdk",
-    "Tollbooth node: 157.245.39.226:8000",
+    "Tollbooth API: https://api.xaps.network",
     "Memory Contracts: DID-gated, client-side encrypted, pay-per-RAG",
-    "Install: pip install xaps",
-    "Registry: http://157.245.39.226:8000/api/v1/registry"
+    "Install: pip install \"xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1\" (PyPI pending)",
+    "Registry: https://api.xaps.network/api/v1/registry"
   ],
   "messageExamples": [
     [

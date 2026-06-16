@@ -61,33 +61,37 @@ See [docs/mcp-host-integration.md](docs/mcp-host-integration.md) for full setup.
 
 ### Start Using `xaps_audit` in 60 Seconds
 
-1. Install:
+1. Install (exposes the `xaps-mcp` console command):
 
    ```bash
    pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
    ```
 
-2. Add to `claude_desktop_config.json`:
+2. Set your agent key in the environment (recommended — avoid storing secrets in config files):
+
+   ```bash
+   export XAPS_AGENT_KEY="your_agent_key"
+   ```
+
+3. Add to Claude Desktop config (macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`):
 
    ```json
    {
      "mcpServers": {
        "xaps-audit": {
-         "command": "python",
-         "args": ["/path/to/xaps_mcp_server.py"],
-         "env": {
-           "XAPS_AGENT_KEY": "your_agent_key"
-         }
+         "command": "xaps-mcp"
        }
      }
    }
    ```
 
+   For local dev from a git clone, use `python /path/to/xaps_mcp_server.py` with `XAPS_MCP_DEV=1` instead.
+
    Full example: [examples/mcp_claude_desktop_config.json](examples/mcp_claude_desktop_config.json)
 
-3. In your agent prompt:
+4. In your agent prompt:
 
-   > Before any `send_transaction`, `approve`, or `deposit` call: invoke `xaps_audit(action=<action_json>)`.
+   > Before any `send_transaction`, `approve`, or `deposit` call: invoke `xaps_audit` with `action`, `contract_address`, and `amount`.
 
 Agent rule templates: [examples/.agentrc](examples/.agentrc)
 

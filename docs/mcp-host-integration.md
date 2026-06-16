@@ -39,22 +39,30 @@ pip install xaps
 
 ### Claude Desktop (`stdio`)
 
+Config file locations:
+
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Linux:** `~/.config/claude-desktop/config.json` (varies by build)
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
 Add to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "xaps-audit": {
-      "command": "python",
-      "args": ["/absolute/path/to/xaps_mcp_server.py"],
+      "command": "xaps-mcp",
       "env": {
-        "XAPS_AGENT_KEY": "your_agent_key",
         "XAPS_API_URL": "https://api.xaps.network"
       }
     }
   }
 }
 ```
+
+Set `XAPS_AGENT_KEY` in your shell profile or OS keychain — **do not commit** config files containing API keys.
+
+Alternative (git clone / dev): use `"command": "python"` with `"args": ["/absolute/path/to/xaps_mcp_server.py"]` and `XAPS_MCP_DEV=1` if running from a checkout without installing.
 
 See `examples/mcp_claude_desktop_config.json` for a full example.
 
@@ -137,7 +145,7 @@ Save receipts alongside agent actions as `audit_receipt.json` for audit trails.
 
 Before any `send_transaction`, `approve`, `deposit`, or other irreversible action:
 
-1. Call `xaps_audit(action=<action_json>)`.
+1. Call `xaps_audit` with `action`, `contract_address`, and `amount`.
 2. If `status` is `APPROVED`, proceed.
 3. If `status` is `REJECTED`, replan or abort.
 

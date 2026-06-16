@@ -1,10 +1,8 @@
 {
   "mcpServers": {
     "xaps-audit": {
-      "command": "python",
-      "args": ["/absolute/path/to/xaps-sdk/xaps_mcp_server.py"],
+      "command": "xaps-mcp",
       "env": {
-        "XAPS_AGENT_KEY": "your_agent_key",
         "XAPS_API_URL": "https://api.xaps.network"
       }
     }

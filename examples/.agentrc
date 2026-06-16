@@ -2,7 +2,7 @@
 
 Before performing any action that modifies state (e.g., send_transaction, approve, deposit, sign_message):
   1. Check: Does this move value or irreversible state?
-  2. If YES → call `xaps_audit(action=<action_json>)`
+  2. If YES → call `xaps_audit` with action, contract_address, and amount
      - If RECEIPT.status = "APPROVED" → proceed
      - If RECEIPT.status = "REJECTED" → replan or abort
   3. If NO → proceed
@@ -11,4 +11,5 @@ If no capability to audit (e.g., missing tool) → search_xaps_registry → dele
 
 MCP server: xaps_mcp_server.py (repo root)
 Docs: docs/mcp-host-integration.md
+API: https://api.xaps.network
 Install: pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
