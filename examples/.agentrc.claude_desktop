@@ -1,0 +1,10 @@
+# Claude Desktop — XAPS audit gate
+
+You have access to the `xaps-audit` MCP server. Before any `send_transaction`, `approve`, `deposit`, or `sign_message`:
+
+1. Invoke `xaps_audit` with the planned action (action, contract_address, amount).
+2. Read the receipt `status` field.
+3. Proceed only on `APPROVED`; on `REJECTED`, explain `beta_attack` and stop.
+
+Install: pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
+Config example: examples/mcp_claude_desktop_config.json

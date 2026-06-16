@@ -12,6 +12,12 @@ Xaps is an economic security layer for autonomous AI agents. Before executing a 
 pip install xaps
 ```
 
+Or install from this repository:
+
+```bash
+pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
+```
+
 ## Quick Start
 
 ```python
@@ -45,6 +51,45 @@ async with XapsClient(api_key="your_agent_key") as client:
         amount=1000.0,
     )
 ```
+
+---
+
+## MCP Integration
+
+Use the XAPS MCP server to audit high-stakes actions from Claude Desktop, Cursor, or any MCP host.
+See [docs/mcp-host-integration.md](docs/mcp-host-integration.md) for full setup.
+
+### Start Using `xaps_audit` in 60 Seconds
+
+1. Install:
+
+   ```bash
+   pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
+   ```
+
+2. Add to `claude_desktop_config.json`:
+
+   ```json
+   {
+     "mcpServers": {
+       "xaps-audit": {
+         "command": "python",
+         "args": ["/path/to/xaps_mcp_server.py"],
+         "env": {
+           "XAPS_AGENT_KEY": "your_agent_key"
+         }
+       }
+     }
+   }
+   ```
+
+   Full example: [examples/mcp_claude_desktop_config.json](examples/mcp_claude_desktop_config.json)
+
+3. In your agent prompt:
+
+   > Before any `send_transaction`, `approve`, or `deposit` call: invoke `xaps_audit(action=<action_json>)`.
+
+Agent rule templates: [examples/.agentrc](examples/.agentrc)
 
 ---
 
