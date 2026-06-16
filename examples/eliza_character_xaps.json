@@ -55,7 +55,7 @@
   },
   "xaps_config": {
     "protocol_version": "1.0.0",
-    "registry_endpoint": "http://157.245.39.226:8000/api/v1/registry",
+    "registry_endpoint": "https://api.xaps.network/api/v1/registry",
     "prefer_subsidized_sinks": true,
     "max_micropayment_usdc": 0.0001,
     "stateless_http_timeout_ms": 15000,
@@ -65,7 +65,7 @@
       "sla_mode": "pay-per-rag-streaming"
     },
     "tollbooth": {
-      "endpoint": "http://157.245.39.226:8000",
+      "endpoint": "https://api.xaps.network",
       "require_pre_approval_for_high_value": true
     }
   }
