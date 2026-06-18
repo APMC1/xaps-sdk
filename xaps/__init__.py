@@ -1,6 +1,6 @@
 """Xaps — The Cognitive Circuit Breaker for Autonomous Agents."""
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from .xaps import (
     XapsAPIError,

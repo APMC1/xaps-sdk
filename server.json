@@ -1,0 +1,35 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.APMC1/xaps",
+  "title": "XAPS MCP Server",
+  "description": "Pre-execution audit for autonomous agents. Independent receipt before irreversible actions.",
+  "repository": {
+    "url": "https://github.com/APMC1/xaps-sdk",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "xaps-sdk",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "XAPS_AGENT_KEY",
+          "description": "Agent billing key for the XAPS Tollbooth API",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "XAPS_API_URL",
+          "description": "XAPS API base URL",
+          "default": "https://api.xaps.network"
+        }
+      ]
+    }
+  ]
+}

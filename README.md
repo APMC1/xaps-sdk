@@ -4,18 +4,20 @@
 
 Xaps is an economic security layer for autonomous AI agents. Before executing a smart contract, transfer, or financial action, your agent calls Xaps for an independent dual-agent audit. Standard Web3 tools verify signatures — **Xaps verifies intent and logic**.
 
+<!-- mcp-name: io.github.APMC1/xaps -->
+
 ---
 
 ## Install
 
 ```bash
-pip install xaps
+pip install xaps-sdk
 ```
 
 Or install from this repository:
 
 ```bash
-pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
+pip install "xaps-sdk @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.2"
 ```
 
 ## Quick Start
@@ -64,7 +66,7 @@ See [docs/mcp-host-integration.md](docs/mcp-host-integration.md) for full setup.
 1. Install (exposes the `xaps-mcp` console command):
 
    ```bash
-   pip install "xaps @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.1"
+   pip install xaps-sdk
    ```
 
 2. Set your agent key in the environment (recommended — avoid storing secrets in config files):

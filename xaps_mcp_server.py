@@ -24,7 +24,7 @@ if os.getenv("XAPS_MCP_DEV"):
 from xaps import XapsClient, XapsRejectedError, verify_xaps_receipt
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_VERSION = "0.1.1"
+SERVER_VERSION = "0.1.2"
 
 API_KEY = os.getenv("XAPS_AGENT_KEY", "")
 BASE_URL = os.getenv("XAPS_API_URL", "https://api.xaps.network")

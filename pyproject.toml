@@ -3,11 +3,11 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "xaps"
-version = "0.1.1"
+name = "xaps-sdk"
+version = "0.1.2"
 description = "The Cognitive Circuit Breaker for Autonomous Agents"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 requires-python = ">=3.9"
 authors = [{name = "APMC1", email = "support@xaps.network"}]
 keywords = ["xaps", "ai-agents", "web3", "security", "autonomous-agents"]
