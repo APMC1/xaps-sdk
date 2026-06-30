@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ape-xaps"
+version = "0.1.0"
+description = "XAPS pre-execution audit helpers for eth-ape scripts and agents"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{name = "APMC1", email = "support@xaps.network"}]
+keywords = ["ape", "xaps", "web3", "agents", "security", "eth-ape"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = [
+    "eth-ape>=0.8,<1",
+    "xaps-sdk>=0.1.2",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "ruff>=0.4"]
+
+[project.urls]
+Homepage = "https://xaps.network"
+Repository = "https://github.com/APMC1/xaps-sdk"
+Documentation = "https://github.com/APMC1/xaps-sdk#readme"
+
+[project.scripts]
+ape-xaps = "ape_xaps.__main__:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
