@@ -22,7 +22,7 @@ python xaps_mcp_server.py
 ### Git install
 
 ```bash
-pip install "xaps-sdk @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.2"
+pip install "xaps-sdk @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.3"
 ```
 
 ### PyPI

@@ -24,7 +24,7 @@ if os.getenv("XAPS_MCP_DEV"):
 from xaps import XapsClient, XapsRejectedError, verify_xaps_receipt
 
 PROTOCOL_VERSION = "2024-11-05"
-SERVER_VERSION = "0.1.2"
+SERVER_VERSION = "0.1.3"
 
 API_KEY = os.getenv("XAPS_AGENT_KEY", "")
 BASE_URL = os.getenv("XAPS_API_URL", "https://api.xaps.network")
@@ -82,6 +82,78 @@ TOOLS = [
                     "description": "ECDSA public key for verification",
                 },
                 "secret": {"type": "string", "description": "HMAC secret for verification"},
+            },
+        },
+    },
+    {
+        "name": "xaps_sink_query",
+        "description": (
+            "Query the XAPS subsidized Sink Oracle with an existing Tollbooth receipt. "
+            "Returns real structured data (GitHub search/repo, HTTP fetch). "
+            "Receipt-gated adoption magnet — no receipt, no data."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "required": ["query", "receipt"],
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": (
+                        "Data request, e.g. 'github repo owner/name', "
+                        "'search github AI agents', 'fetch https://...'"
+                    ),
+                },
+                "receipt": {
+                    "type": "object",
+                    "description": "Approved XAPS Tollbooth receipt from xaps_audit",
+                },
+                "oracle_url": {
+                    "type": "string",
+                    "description": "Sink base URL (default XAPS_ORACLE_URL or localhost:8766)",
+                },
+            },
+        },
+    },
+    {
+        "name": "xaps_audit_then_query",
+        "description": (
+            "One-shot adoption path: Tollbooth audit (fast path for query_oracle) "
+            "then subsidized Sink query. Use when the agent needs structured data "
+            "and should ride XAPS rails end-to-end."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "required": ["query"],
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Data request for the Sink Oracle",
+                },
+                "amount": {
+                    "type": "number",
+                    "description": "Audit amount / toll (default 0.01)",
+                },
+                "oracle_url": {
+                    "type": "string",
+                    "description": "Sink base URL override",
+                },
+                "use_fast": {
+                    "type": "boolean",
+                    "description": "Use /verify/fast when allowlisted (default true)",
+                },
+            },
+        },
+    },
+    {
+        "name": "xaps_sink_health",
+        "description": "Health + capabilities of the XAPS Sink Oracle (adoption magnet).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "oracle_url": {
+                    "type": "string",
+                    "description": "Sink base URL (default XAPS_ORACLE_URL or localhost:8766)",
+                },
             },
         },
     },
@@ -185,6 +257,74 @@ def handle_call_tool(client: XapsClient, name: str, arguments: dict[str, Any]) -
             },
             is_error=not valid,
         )
+
+    if name == "xaps_sink_query":
+        for field in ("query", "receipt"):
+            if field not in arguments:
+                raise ValueError(f"Missing required argument: {field}")
+        try:
+            result = client.query_sink(
+                arguments["query"],
+                arguments["receipt"],
+                oracle_url=arguments.get("oracle_url"),
+            )
+            return _tool_result(result)
+        except Exception as e:
+            return _tool_result(
+                {"status": "ERROR", "error": str(e), "recommendation": "RETRY or re-audit"},
+                is_error=True,
+            )
+
+    if name == "xaps_audit_then_query":
+        if "query" not in arguments:
+            raise ValueError("Missing required argument: query")
+        try:
+            result = client.audit_then_query(
+                arguments["query"],
+                amount=float(arguments.get("amount", 0.01)),
+                oracle_url=arguments.get("oracle_url"),
+                use_fast=bool(arguments.get("use_fast", True)),
+            )
+            return _tool_result(result)
+        except XapsRejectedError as e:
+            return _tool_result(
+                {
+                    "status": "REJECTED",
+                    "reason": e.reason,
+                    "receipt": e.receipt,
+                    "recommendation": "HALT — Tollbooth blocked query_oracle",
+                },
+                is_error=True,
+            )
+        except Exception as e:
+            return _tool_result(
+                {"status": "ERROR", "error": str(e), "recommendation": "RETRY or ESCALATE"},
+                is_error=True,
+            )
+
+    if name == "xaps_sink_health":
+        import httpx
+
+        base = (
+            arguments.get("oracle_url")
+            or os.getenv("XAPS_ORACLE_URL")
+            or "http://localhost:8766"
+        ).rstrip("/")
+        try:
+            health = httpx.get(f"{base}/oracle/health", timeout=5.0)
+            caps = httpx.get(f"{base}/oracle/capabilities", timeout=5.0)
+            payload = {
+                "oracle_url": base,
+                "health": health.json() if health.status_code < 500 else {"status_code": health.status_code},
+                "capabilities": caps.json() if caps.status_code < 500 else None,
+                "healthy": health.status_code < 500,
+            }
+            return _tool_result(payload, is_error=not payload["healthy"])
+        except Exception as e:
+            return _tool_result(
+                {"healthy": False, "oracle_url": base, "error": str(e)},
+                is_error=True,
+            )
 
     raise ValueError(f"Unknown tool: {name}")
 

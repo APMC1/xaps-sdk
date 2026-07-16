@@ -1,8 +1,9 @@
 """Xaps — The Cognitive Circuit Breaker for Autonomous Agents."""
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 from .xaps import (
+    FAST_ALLOWLIST,
     XapsAPIError,
     XapsAuthError,
     XapsClient,
@@ -10,12 +11,14 @@ from .xaps import (
     XapsPaymentError,
     XapsRateLimitError,
     XapsRejectedError,
+    is_fast_allowlisted,
     verify_receipt_ecdsa,
     verify_receipt_hmac,
     verify_xaps_receipt,
 )
 
 __all__ = [
+    "FAST_ALLOWLIST",
     "XapsClient",
     "XapsError",
     "XapsAuthError",
@@ -23,6 +26,7 @@ __all__ = [
     "XapsRateLimitError",
     "XapsAPIError",
     "XapsRejectedError",
+    "is_fast_allowlisted",
     "verify_receipt_ecdsa",
     "verify_receipt_hmac",
     "verify_xaps_receipt",

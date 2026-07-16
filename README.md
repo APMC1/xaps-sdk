@@ -17,7 +17,7 @@ pip install xaps-sdk
 Or install from this repository:
 
 ```bash
-pip install "xaps-sdk @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.2"
+pip install "xaps-sdk @ git+https://github.com/APMC1/xaps-sdk.git@v0.1.3"
 ```
 
 ## Quick Start
@@ -139,6 +139,30 @@ Synchronous audit. Returns receipt dict:
 ### `await client.audit_async(...)`
 
 Async variant for agents running on `asyncio`.
+
+### Sink adoption magnet — `audit_then_query` / `query_sink`
+
+After a Tollbooth receipt, agents can call the **subsidized Sink** for real structured data (GitHub / HTTP). That is the integration carrot: rails → utility.
+
+```python
+from xaps import XapsClient
+
+with XapsClient() as client:
+    # One shot: fast/swarm audit for query_oracle, then sink
+    result = client.audit_then_query(
+        "github repo anthropics/anthropic-sdk-python",
+        oracle_url="http://localhost:8766",  # or XAPS_ORACLE_URL
+    )
+    print(result["sink"]["data"])
+
+    # Or reuse an existing receipt
+    receipt = client.audit_auto("query_oracle", "", 0.01)
+    data = client.query_sink("search github MCP agents", receipt)
+```
+
+Env: `XAPS_ORACLE_URL` (sink base), `XAPS_API_URL` + `XAPS_AGENT_KEY` (tollbooth).
+
+MCP: `xaps_audit_then_query`, `xaps_sink_query`, `xaps_sink_health`.
 
 ### Exceptions
 

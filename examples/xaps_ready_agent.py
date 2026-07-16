@@ -16,14 +16,24 @@ import json
 from xaps import XapsClient, XapsRejectedError
 
 # ── CONFIG ──────────────────────────────────────────────────────────
-AGENT_KEY = os.getenv("XAPS_AGENT_KEY", "your_key_here")
 TOLLBOOTH = os.getenv("XAPS_API_URL", "https://api.xaps.network")
+WALLET = os.getenv("XAPS_WALLET_ADDRESS", "").strip() or None
+CHAIN = os.getenv("XAPS_WALLET_CHAIN", "").strip() or None
 
-if AGENT_KEY == "your_key_here":
-    print("ERROR: Set XAPS_AGENT_KEY environment variable")
-    exit(1)
-
-client = XapsClient(api_key=AGENT_KEY, base_url=TOLLBOOTH)
+if hasattr(XapsClient, "bootstrap"):
+    client, onboard = XapsClient.bootstrap(
+        base_url=TOLLBOOTH,
+        wallet_address=WALLET,
+        chain=CHAIN,
+    )
+    print(f"[XAPS] Onboarded: {onboard.get('agent_key', client.api_key)}")
+    print(f"[XAPS] Balance: ${onboard.get('balance_usd', client.get_balance()):.2f}")
+else:
+    AGENT_KEY = os.getenv("XAPS_AGENT_KEY", "")
+    if not AGENT_KEY:
+        print("ERROR: Set XAPS_AGENT_KEY or upgrade SDK for bootstrap()")
+        exit(1)
+    client = XapsClient(api_key=AGENT_KEY, base_url=TOLLBOOTH)
 
 # ── FALLBACK PROTOCOL ───────────────────────────────────────────────
 def handle_capability_gap(task_description: str, budget: float):
