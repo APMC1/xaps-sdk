@@ -15,6 +15,9 @@ from .xaps import (
     verify_receipt_ecdsa,
     verify_receipt_hmac,
     verify_xaps_receipt,
+    RECEIPT_HEADER,
+    independent_clearance,
+    require_value_clearance,
 )
 
 __all__ = [
@@ -30,5 +33,8 @@ __all__ = [
     "verify_receipt_ecdsa",
     "verify_receipt_hmac",
     "verify_xaps_receipt",
+    "RECEIPT_HEADER",
+    "independent_clearance",
+    "require_value_clearance",
     "__version__",
 ]

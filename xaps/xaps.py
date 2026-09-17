@@ -16,7 +16,7 @@ FAST_ALLOWLIST = frozenset(
     a.strip()
     for a in os.getenv(
         "XAPS_FAST_ALLOWLIST",
-        "query_oracle,fast_reason,scout_read",
+        "query_oracle,fast_reason,scout_read,github_create_issue",
     ).split(",")
     if a.strip()
 )
@@ -693,3 +693,55 @@ def verify_xaps_receipt(receipt: dict, *, public_key_hex: str | None = None, sec
     else:
         logger.warning(f"Unknown signature_scheme in receipt: {scheme}")
         return False
+
+
+RECEIPT_HEADER = "X-XAPS-Receipt"
+
+
+def independent_clearance(
+    receipt_id: str,
+    *,
+    require_use_case: str = "value_move",
+    amount: float | None = None,
+    pay_to: str | None = None,
+    resource: str | None = None,
+    payload_hash: str | None = None,
+    base_url: str = DEFAULT_BASE_URL,
+    timeout: float = 10.0,
+) -> dict[str, Any]:
+    """Ask the Tollbooth — not the payer — whether this receipt is cleared.
+
+    Pass ``amount`` / ``pay_to`` / ``resource`` to bind the receipt to *this*
+    payment (replay protection). Facilitators should always send them.
+    """
+    rid = (receipt_id or "").strip()
+    if not rid:
+        raise XapsAPIError("receipt_id required")
+    url = base_url.rstrip("/")
+    body: dict[str, Any] = {"receipt_id": rid, "require_use_case": require_use_case}
+    if amount is not None:
+        body["amount"] = amount
+    if pay_to:
+        body["pay_to"] = pay_to
+    if resource:
+        body["resource"] = resource
+    if payload_hash:
+        body["payload_hash"] = payload_hash
+    try:
+        with httpx.Client(timeout=timeout, headers={"User-Agent": "xaps-sdk/clearance"}) as c:
+            r = c.post(f"{url}/receipts/clear", json=body)
+            if r.status_code == 404:
+                raise XapsAPIError("Unknown receipt_id")
+            if r.status_code >= 400:
+                raise XapsAPIError(f"API error {r.status_code}: {r.text[:200]}")
+            return r.json()
+    except httpx.HTTPError as visc:
+        raise XapsAPIError(f"Connection failed: {visc}") from visc
+
+
+def require_value_clearance(receipt_id: str, **kwargs: Any) -> dict[str, Any]:
+    """Fail closed unless cleared for this value_move (and binding if given)."""
+    view = independent_clearance(receipt_id, require_use_case="value_move", **kwargs)
+    if not view.get("clear"):
+        raise XapsRejectedError(view.get("reason") or "not cleared for value_move", receipt=view)
+    return view
