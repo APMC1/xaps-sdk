@@ -16,7 +16,6 @@ id: xaps
 name: XAPS MCP Server
 description: Pre-execution audit tool for autonomous agents — prevents irreversible actions via independent receipt issuance.
 author: Angus McCaffrey (APMC1)
-contact: angus.mccaffrey@gmail.com
 repository: https://github.com/APMC1/xaps-sdk
 docs: https://github.com/APMC1/xaps-sdk/blob/main/docs/mcp-host-integration.md
 installation:
